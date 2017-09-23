@@ -146,24 +146,12 @@ dialog.matches('StartRide', [
 
 dialog.matches('AddLyft', [
     function (session) {
-        // getLyftAccess(session);
-        getLyft(session);
+        getLyftAccess(session);
         builder.Prompts.text(session, "Please give the access code for us to add your lyft account");
     },
     function (session,results) {
         session.dialogData.access_code = results.response;
 
-        builder.Prompts.text(session, "Enter the username");
-    },
-    function (session,results) {
-        session.dialogData.username = results.response;
-
-        builder.Prompts.text(session, "Enter the password");
-    },
-    function (session,results) {
-        session.dialogData.password = results.response;
-
-        builder.Prompts.text(session, "Enter the username");
         getLyft(session);
     }
 ]);
