@@ -43,16 +43,65 @@ dialog.matches('StartRide', [
     },
     function (session, results) {
         if (!cancel(session, results)){
-            session.dialogData.destination = results.response;
-            session.send("OK. Setting the destination as " + session.dialogData.destination);
-            builder.Prompts.text(session, 'Where should the starting point be?');
+            session.dialogData.input = results.response;
+            getAddress(String(results.response), function(results, status) {
+                // use the return value here instead of like a regular (non-evented) return value
+
+                if (status == "OK"){
+                    session.send("Got the destination as " + results[0]);
+                    session.send("Press ok to accept and anything else to abort.");
+                    builder.Prompts.text(session, 'Is this the destination correct?');
+                }
+                else{
+                    session.endDialog('start over...');
+                }
+            });
         }
     },
     function (session, results) {
         if (!cancel(session, results)) {
-            session.dialogData.source = results.response;
-            session.send("OK. Setting the starting point as " + session.dialogData.source);
-            builder.Prompts.text(session, "Should I go ahead and book the ride");
+            var confirmation = String(results.response)
+            if (confirmation.toUpperCase() == "OK") {
+                session.dialogData.destination = session.dialogData.input;
+                session.send("OK. Setting the destination as " + session.dialogData.destination);
+                builder.Prompts.text(session, "OK. Where should I set the pick up point?");
+                //builder.Prompts.text(session, "Should I go ahead and book the ride");
+            }
+            else{
+                session.endDialog('start over...');
+            }
+
+        }
+    },
+    function (session, results) {
+        if (!cancel(session, results)){
+            session.dialogData.input = results.response;
+            getAddress(String(results.response), function(results, status) {
+                // use the return value here instead of like a regular (non-evented) return value
+
+                if (status == "OK"){
+                    session.send("Got the pickup point as " + results[0]);
+                    session.send("Press ok to accept and anything else to abort.");
+                    builder.Prompts.text(session, 'Is this the pickup correct?');
+                }
+                else{
+                    session.endDialog('start over...');
+                }
+            });
+        }
+    },
+    function (session, results) {
+        if (!cancel(session, results)) {
+            var confirmation = String(results.response)
+            if (confirmation.toUpperCase() == "OK") {
+                session.dialogData.source = session.dialogData.input;
+                session.send("OK. Setting the pickup point as " + session.dialogData.source);
+                builder.Prompts.text(session, "Should I go ahead and book the ride");
+            }
+            else{
+                session.endDialog('start over...');
+            }
+
         }
     },
     function (session, results) {
@@ -85,6 +134,20 @@ dialog.matches('StartRide', [
     }
 ]);
 
+function getAddress(query, callback){
+    request('https://maps.googleapis.com/maps/api/geocode/json?address=' + query + '&key=AIzaSyA3NVLELHjx96HuG6XlCHWPbzzzf6BBS3s', function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+            var json = JSON.parse(body)
+
+            var status = json['status'];
+            var results = [];
+            for (a in json.results){
+                results.push(json.results[a].formatted_address);
+            }
+            callback(results, status)
+        }
+    })
+}
 function cancel(session, results) {
     if (String(results.response).toLowerCase() == 'cancel'){
         session.endDialog("OK. Cancelling the request.");
