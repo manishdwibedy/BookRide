@@ -42,39 +42,54 @@ dialog.matches('StartRide', [
 
     },
     function (session, results) {
-        session.dialogData.destination = results.response;
-        session.send("OK. Setting the destination as " + session.dialogData.destination);
-        builder.Prompts.text(session, 'Where should the starting point be?');
+        if (!cancel(session, results)){
+            session.dialogData.destination = results.response;
+            session.send("OK. Setting the destination as " + session.dialogData.destination);
+            builder.Prompts.text(session, 'Where should the starting point be?');
+        }
     },
     function (session, results) {
-        session.dialogData.source = results.response;
-        session.send("OK. Setting the starting point as " + session.dialogData.source);
-        builder.Prompts.text(session, "Should I go ahead and book the ride");
+        if (!cancel(session, results)) {
+            session.dialogData.source = results.response;
+            session.send("OK. Setting the starting point as " + session.dialogData.source);
+            builder.Prompts.text(session, "Should I go ahead and book the ride");
+        }
     },
     function (session, results) {
-        session.dialogData.confirmation = results.response;
-        try{
-            var confirmation = str(results.response)
-            if (confirmation.toUpperCase() == "OK"){
-                session.endDialog("Great. I am booking a ride for you.");
+        if (!cancel(session, results)) {
+            session.dialogData.confirmation = results.response;
+            try {
+                var confirmation = String(results.response)
+                if (confirmation.toUpperCase() == "OK") {
+                    session.endDialog("Great. I am booking a ride for you.");
+                }
+                else {
+                    builder.Prompts.text(session, "Oh. Should I cancel the ride. Say OK to book or anything other than that to cancel the request");
+                }
             }
-            else {
+            catch (err) {
                 builder.Prompts.text(session, "Oh. Should I cancel the ride. Say OK to book or anything other than that to cancel the request");
             }
         }
-        catch(err){
-            builder.Prompts.text(session, "Oh. Should I cancel the ride. Say OK to book or anything other than that to cancel the request");
-        }
     },
     function (session, results, next) {
-        session.dialogData.confirmation = results.response;
-        if (results.response == "OK"){
-            session.endDialog("Great. I am booking a ride for you.");
-        }
-        else{
-            session.endDialog("OK. Cancelling the request.");
+        if (!cancel(session, results)) {
+            session.dialogData.confirmation = results.response;
+            if (results.response == "OK") {
+                session.endDialog("Great. I am booking a ride for you.");
+            }
+            else {
+                session.endDialog("OK. Cancelling the request.");
+            }
         }
     }
 ]);
 
+function cancel(session, results) {
+    if (String(results.response).toLowerCase() == 'cancel'){
+        session.endDialog("OK. Cancelling the request.");
+        return true
+    }
+    return false
+}
 dialog.onDefault(builder.DialogAction.send("I'm sorry I didn't understand. I can only book rides."));
