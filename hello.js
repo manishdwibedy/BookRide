@@ -10,12 +10,21 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 
 var MICROSOFT_APP_ID = '99ffde50-d6f9-4853-b744-c251e7255df0';
 var MICROSOFT_APP_PASSWORD = 'XOjg6LtgkryrBgBBz5knuJr';
+var LYFT_CLIENT_ID = 'FByyis93GEZR';
+var LYFT_CLIENT_SECRET = 'FZXmjNuivSq8cIqRCVQgg5SST8jzYAOz';
 
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
     appId: MICROSOFT_APP_ID,
     appPassword: MICROSOFT_APP_PASSWORD
 });
+
+server.get('/lyft', function (req, res) {
+    var query = req.query().split('&')
+
+    var code = query[0].split('=')[1]
+    res.send('Hello World!')
+})
 
 // Listen for messages from users
 server.post('/api/messages', connector.listen());
@@ -133,6 +142,39 @@ dialog.matches('StartRide', [
         }
     }
 ]);
+
+dialog.matches('AddLyft', [
+    function (session) {
+        getLyftAccess(session);
+
+    },
+    function (session) {
+        builder.Prompts.text(session, "Please give the access code for us to add your lyft account");
+    },
+    function (session) {
+        session.dialogData.access_code = results.response;
+
+        builder.Prompts.text(session, "Please give the access code for us to add your lyft account");
+    }
+]);
+
+function getLyft(){
+    headers = {
+        'Content-Type': 'application/json',
+    }
+
+    data = '{"grant_type": "authorization_code", "code": "<authorization_code>"}'
+
+    requests.post('http://This', headers=headers, data=data, auth=('', '<client_secret>'))
+
+}
+function getLyftAccess(session) {
+
+    var url = "https://api.lyft.com/oauth/authorize?client_id=FByyis93GEZR&scope=public%20profile%20rides.read%20rides.request%20offline&state=a&response_type=code"
+
+    session.send("You need to add the lyft account");
+    session.send(url)
+}
 
 function getAddress(query, callback){
     request('https://maps.googleapis.com/maps/api/geocode/json?address=' + query + '&key=AIzaSyA3NVLELHjx96HuG6XlCHWPbzzzf6BBS3s', function (error, response, body) {
