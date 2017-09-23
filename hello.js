@@ -1,6 +1,7 @@
 var restify = require('restify');
 var builder = require('botbuilder');
 var request = require('request');
+var http = require('http');
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -145,27 +146,58 @@ dialog.matches('StartRide', [
 
 dialog.matches('AddLyft', [
     function (session) {
-        getLyftAccess(session);
-
-    },
-    function (session) {
+        // getLyftAccess(session);
+        getLyft(session);
         builder.Prompts.text(session, "Please give the access code for us to add your lyft account");
     },
-    function (session) {
+    function (session,results) {
         session.dialogData.access_code = results.response;
 
-        builder.Prompts.text(session, "Please give the access code for us to add your lyft account");
+        builder.Prompts.text(session, "Enter the username");
+    },
+    function (session,results) {
+        session.dialogData.username = results.response;
+
+        builder.Prompts.text(session, "Enter the password");
+    },
+    function (session,results) {
+        session.dialogData.password = results.response;
+
+        builder.Prompts.text(session, "Enter the username");
+        getLyft(session);
     }
 ]);
 
-function getLyft(){
+function getLyft(session){
     headers = {
         'Content-Type': 'application/json',
     }
 
-    data = '{"grant_type": "authorization_code", "code": "<authorization_code>"}'
+    data = '{"grant_type": "authorization_code", "code": ' + session.dialogData.access_code + '}'
 
-    requests.post('http://This', headers=headers, data=data, auth=('', '<client_secret>'))
+    const secret = 'manish.dwibedy@gmail.com:liferocks'
+    // session.dialogData.username + ':' + session.dialogData.password
+    headers = {
+        'Content-Type': 'application/json',
+    }
+
+
+    var options = {
+        host: 'https://api.lyft.com/oauth/token',
+        method: 'POST',
+        headers: headers,
+        auth:(LYFT_CLIENT_ID, secret),
+        data:data
+    };
+
+    http.request(options, function(res) {
+        console.log('STATUS: ' + res.statusCode);
+        console.log('HEADERS: ' + JSON.stringify(res.headers));
+        res.setEncoding('utf8');
+        res.on('data', function (chunk) {
+            console.log('BODY: ' + chunk);
+        });
+    }).end();
 
 }
 function getLyftAccess(session) {
