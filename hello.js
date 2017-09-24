@@ -77,6 +77,10 @@ server.get('/refresh', function (req, res) {
     refresh();
 })
 
+server.get('/estimate', function (req, res) {
+    getEstimate();
+})
+
 function refresh() {
     data = {
         "grant_type": "refresh_token",
@@ -277,6 +281,9 @@ dialog.matches('StartRide', [
                     CLASS = 'lyft'
             }
 
+            // getEstimate(session, function(){
+            //
+            // });
             bookLyft(session, function(status) {
                 if (status == 'done'){
                     session.send("Type 'status' to get the status of your ride.");
@@ -388,7 +395,7 @@ dialog.matches('status', [
 dialog.matches('cancel', [
     function (session) {
         cancelLyft(session, function() {
-            session.endDialog('Your ride has been cancel');
+            session.endDialog('Your ride has been cancelled');
         })
 
     }
@@ -466,6 +473,67 @@ function bookLyft(session, callback){
     })
 }
 
+function getEstimate(session, callback){
+
+    var source, destination;
+    if (session == null){
+        source = "34.010891,-118.291892"
+        destination = "34.025963, -118.284229"
+
+        headers = {
+            'Content-type': "application/json",
+            'Authorization': 'Bearer +fDKPbE7Vrsg3jIpDtoXhwpxonK2cvWcy0sPf53EcNroLPK1vnblQI5fIARbZ8w51Yuv5SIb6ISFMimeUkBU6bUx1VPV+sK4K5cK1HRA0mFu6MmnOVsSNHg='
+        };
+    }
+    else{
+        source = session.dialogData.source.split(',')
+        destination = session.dialogData.destination.split(',')
+
+        headers = {
+            'Content-type': "application/json",
+            'Authorization': 'Bearer ' + USER_TOKEN
+        };
+    }
+    // data = {
+    //     "ride_type" : CLASS,
+    //     "origin.lat" : parseFloat(source[0]),
+    //     "origin.lng" : parseFloat(source[1]),
+    //
+    //     "destination" : {
+    //         "lat" : parseFloat(destination[0]),
+    //         "lng" : parseFloat(destination[1]),
+    //         "address" : session.dialogData.destinationAddress
+    //     }
+    // };
+
+    // var auth = new Buffer(USER_TOKEN).toString('base64');
+
+
+
+    // Configure the request
+    var options = {
+        url: 'https://api.lyft.com/v1/cost?start_lat=' + source[0] + '&start_lng=' + source[1] +
+        '&end_lat=' + destination[0] + '&end_lng=' + destination[1],
+        method: 'GET',
+        headers: headers,
+        // form: data,
+        json: true
+
+    }
+
+    // Start the request
+    request(options, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+            // Print out the response body
+            RIDE_ID = body.ride_id
+            callback('done')
+        }
+        if (body.error == 'invalid_grant'){
+            callback('error')
+        }
+    })
+}
+
 function getLyftDetail(session, callback){
     try{
         headers = {
@@ -494,7 +562,7 @@ function getLyftDetail(session, callback){
 
 
                 if (driver != null && vehicle != null && origin != null){
-                    session.send('Your driver '+ driver.first_name + ' is coming to pick up in' + (origin.eta_seconds / 60) + ' minutes.');
+                    session.send('Your driver '+ driver.first_name + ' is coming to pick up in ' + (origin.eta_seconds / 60) + ' minutes.');
                     session.send('You can contact the driver at ' + driver.phone_number);
                     callback('OK')
                 }
