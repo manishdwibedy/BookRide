@@ -13,15 +13,14 @@ var MICROSOFT_APP_ID = '99ffde50-d6f9-4853-b744-c251e7255df0';
 var MICROSOFT_APP_PASSWORD = 'XOjg6LtgkryrBgBBz5knuJr';
 var LYFT_CLIENT_ID = 'FByyis93GEZR';
 var LYFT_CLIENT_SECRET = 'SANDBOX-FZXmjNuivSq8cIqRCVQgg5SST8jzYAOz';
+var UBER_CLIENT_ID = 'FXMuGbM3hHBA5ZMIeS_KB78nVeUEEVmU';
+var UBER_CLIENT_SECRET = 'M5D92MzsvquygwVAYQblnliU95inJw7LWwUY2cim';
 
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
     appId: MICROSOFT_APP_ID,
     appPassword: MICROSOFT_APP_PASSWORD
 });
-
-USER_TOKEN = "";
-REFRESH_TOKEN = ""
 
 server.get('/lyft', function (req, res) {
     var query = req.query().split('&')
@@ -30,7 +29,14 @@ server.get('/lyft', function (req, res) {
     res.send('Hello World!')
 })
 
-server.get('/link', function (req, res) {
+server.get('/uber', function (req, res) {
+    var query = req.query().split('&')
+
+    var code = query[0].split('=')[1]
+    res.send('Hello World!')
+})
+
+server.get('/lyftlink', function (req, res) {
     data = {
         "grant_type": "authorization_code",
         "code":"sxWDUZePueytFnd5"
@@ -66,17 +72,74 @@ server.get('/link', function (req, res) {
     })
 })
 
+server.get('/uberlink', function (req, res) {
+    data = {
+        "grant_type": "authorization_code",
+        "code":"sxWDUZePueytFnd5"
+    };
+
+    var auth = new Buffer(UBER_CLIENT_ID + ':' + UBER_CLIENT_SECRET).toString('base64');
+
+    headers = {
+        'Content-type': "application/json",
+        'Authorization': 'Basic ' + auth
+    };
+
+    // Configure the request
+    var options = {
+        url: 'https://login.uber.com/oauth/v2/token',
+        method: 'POST',
+        headers: headers,
+        form: data,
+        json:true
+
+    }
+
+    // Start the request
+    request(options, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+            // Print out the response body
+            console.log(body)
+        }
+        if (body.error == 'invalid_grant'){
+
+        }
+
+    })
+})
+
 server.get('/get', function (req, res) {
     getUser()
 })
 
-server.get('/refresh', function (req, res) {
+server.get('/lyftbook', function (req, res) {
+
+    /*
+    curl -X POST -H "Content-Type: application/json" \
+     --user "<client_id>:<client_secret>" \
+     -d '{"grant_type": "authorization_code", "code": "<authorization_code>"}' \
+     'https://api.lyft.com/oauth/token'
+
+
+     curl -X POST -H "Authorization: Bearer <access_token> " \
+     -H "Content-Type: application/json" \
+     -d '' \
+     'https://api.lyft.com/v1/rides'
+     */
     data = {
-        "grant_type": "refresh_token",
-        "refresh_token":REFRESH_TOKEN
+        "ride_type" : "lyft",
+        "origin" : {
+            "lat" : 37.77663,
+            "lng" : -122.39227
+        },
+        "destination" : {
+            "lat" : 37.771,
+            "lng" : -122.39123,
+            "address" : "Mission Bay Boulevard North"
+        }
     };
 
-    var auth = new Buffer(LYFT_CLIENT_ID + ':' + LYFT_CLIENT_SECRET).toString('base64');
+    var auth = new Buffer("WqmG5ZFDEOcpITyiIKQWrpyVLO8zmHCnx7y4qsadBC8MQI+zeJYaY59BKSWK1UlDVd1XvaqUrNdyjJmx3r5S9TWf2aWTFRrxgT5WHzcCRUystMYdHswCIOE=").toString('base64');
 
     headers = {
         'Content-type': "application/json",
@@ -95,7 +158,6 @@ server.get('/refresh', function (req, res) {
 
     // Start the request
     request(options, function (error, response, body) {
-        USER_TOKEN = body.access_token
         if (!error && response.statusCode == 200) {
             // Print out the response body
             console.log(body)
@@ -107,41 +169,13 @@ server.get('/refresh', function (req, res) {
     })
 })
 
-server.get('/book', function (req, res) {
-
-    /*
-     curl -X POST -H "Authorization: Bearer <access_token> " \
-     -H "Content-Type: application/json" \
-     -d '' \
-     'https://api.lyft.com/v1/rides'
-     */
-
-//     var lyft = require('node-lyft');
-//
-//
-//     let defaultClient = lyft.ApiClient.instance;
-//
-// // Configure OAuth2 access token for authorization: User Authentication
-//     let userAuth = defaultClient.authentications['User Authentication'];
-//     userAuth.accessToken = USER_TOKEN;
-//
-//     let apiInstance = new lyft.UserApi();
-//
-//     let request = new lyft.Ride('lyft', new lyft.Location(37.77663, -122.39227));
-//     request.destination = new lyft.Location(37.771, -122.39123);
-//
-//     apiInstance.newRide(request).then((data) => {
-//         console.log('API called successfully. Returned data: ' + data);
-// }, (error) => {
-//         console.error(error);
-//     });
-
-
+server.get('/uberbook', function (req, res) {
     data = {
-        "ride_type" : "lyft",
-        "origin.lat" : 37.771,
-        "origin.lng" : -122.39423,
-
+        "ride_type" : "uber",
+        "origin" : {
+            "lat" : 37.77663,
+            "lng" : -122.39227
+        },
         "destination" : {
             "lat" : 37.771,
             "lng" : -122.39123,
@@ -149,20 +183,20 @@ server.get('/book', function (req, res) {
         }
     };
 
-    // var auth = new Buffer(USER_TOKEN).toString('base64');
+    var auth = new Buffer("WqmG5ZFDEOcpITyiIKQWrpyVLO8zmHCnx7y4qsadBC8MQI+zeJYaY59BKSWK1UlDVd1XvaqUrNdyjJmx3r5S9TWf2aWTFRrxgT5WHzcCRUystMYdHswCIOE=").toString('base64');
 
     headers = {
         'Content-type': "application/json",
-        'Authorization': 'Bearer ' + USER_TOKEN
+        'Authorization': 'Basic ' + auth
     };
 
     // Configure the request
     var options = {
-        url: 'https://api.lyft.com/v1/rides',
+        url: 'https://login.uber.com/oauth/v2/token',
         method: 'POST',
         headers: headers,
         form: data,
-        json: true
+        json:true
 
     }
 
@@ -175,6 +209,7 @@ server.get('/book', function (req, res) {
         if (body.error == 'invalid_grant'){
 
         }
+
     })
 })
 // Listen for messages from users
@@ -274,16 +309,7 @@ dialog.matches('StartRide', [
             try {
                 var confirmation = String(results.response)
                 if (confirmation.toUpperCase() == "OK") {
-                    bookLyft(session, function(status) {
-
-                        if (status == 'done'){
-                            session.endDialog("Great. I am booking a ride for you.");
-                        }
-                        else{
-                            session.endDialog("Error occurred");
-                        }
-
-                    });
+                    session.endDialog("Great. I am booking a ride for you.");
                 }
                 else {
                     builder.Prompts.text(session, "Oh. Should I cancel the ride. Say OK to book or anything other than that to cancel the request");
@@ -298,19 +324,7 @@ dialog.matches('StartRide', [
         if (!cancel(session, results)) {
             session.dialogData.confirmation = results.response;
             if (results.response == "OK") {
-                bookLyft(session, function(status) {
-
-                    if (status == 'OK'){
-                        session.endDialog("Great. I am booking a ride for you.");
-                    }
-                    else{
-                        session.endDialog("Error occurred");
-                    }
-
-                });
-
-
-
+                session.endDialog("Great. I am booking a ride for you.");
             }
             else {
                 session.endDialog("OK. Cancelling the request.");
@@ -322,15 +336,15 @@ dialog.matches('StartRide', [
 dialog.matches('AddLyft', [
     function (session) {
         getLyftAccess(session);
-        session.send(session, "We need the access code for us to add your lyft account");
-        builder.Prompts.text(session, "Do you have an acces token from Lyft");
+        session.send(session, "We need the access code for us to add your Lyft account");
+        builder.Prompts.text(session, "Do you have an acces token from Lyft?");
     },
     function (session,results) {
         if (!cancel(session, results)) {
             const ans = results.response
 
             if (String(ans)[0].toLowerCase() == 'y') {
-                builder.Prompts.text(session, "Please enter the acces token from Lyft");
+                builder.Prompts.text(session, "Please enter the access token from Lyft");
             }
             else {
                 session.endDialog('We need the token. Please start over...');
@@ -343,7 +357,40 @@ dialog.matches('AddLyft', [
 
             getLyft(session, function(results, status) {
                 if (results == 'OK'){
-                    USER_TOKEN =
+                    session.endDialog("Great! Added your account...")
+                }
+                else{
+                    session.endDialog("Invalid/Expired Access Code");
+                }
+            });
+        }
+    }
+]);
+
+dialog.matches('AddUber', [
+    function (session) {
+        getUberAccess(session);
+        session.send(session, "We need the access code for us to add your Uber account");
+        builder.Prompts.text(session, "Do you have an access token from Uber?");
+    },
+    function (session,results) {
+        if (!cancel(session, results)) {
+            const ans = results.response
+
+            if (String(ans)[0].toLowerCase() == 'y') {
+                builder.Prompts.text(session, "Please enter the access token from Uber");
+            }
+            else {
+                session.endDialog('We need the token. Please start over...');
+            }
+        }
+    },
+    function (session,results) {
+        if (!cancel(session, results)) {
+            session.dialogData.access_code = results.response;
+
+            getUber(session, function(results, status) {
+                if (results == 'OK'){
                     session.endDialog("Great! Added your account...")
                 }
                 else{
@@ -377,48 +424,6 @@ function bookRide() {
 
 }
 
-function bookLyft(session, callback){
-
-    data = {
-        "ride_type" : "lyft",
-        "origin.lat" : 37.771,
-        "origin.lng" : -122.39423,
-
-        "destination" : {
-            "lat" : 37.771,
-            "lng" : -122.39123,
-            "address" : "Mission Bay Boulevard North"
-        }
-    };
-
-    // var auth = new Buffer(USER_TOKEN).toString('base64');
-
-    headers = {
-        'Content-type': "application/json",
-        'Authorization': 'Bearer ' + USER_TOKEN
-    };
-
-    // Configure the request
-    var options = {
-        url: 'https://api.lyft.com/v1/rides',
-        method: 'POST',
-        headers: headers,
-        form: data,
-        json: true
-
-    }
-
-    // Start the request
-    request(options, function (error, response, body) {
-        if (!error && response.statusCode == 201) {
-            // Print out the response body
-            callback('done')
-        }
-        if (body.error == 'invalid_grant'){
-            callback('error')
-        }
-    })
-}
 function getLyft(session, callback){
     try{
 
@@ -449,10 +454,57 @@ function getLyft(session, callback){
             if (!error && response.statusCode == 200) {
                 // Print out the response body
 
-                addUser(body.access_token, body.refresh_token);
+                db.addUser(body.access_token, body.refresh_token);
+                callback('OK', message = {
+                    'access_token': body.access_token,
+                    'refresh_token': body.refresh_token,
+                });
+            }
+            if (body.error == 'invalid_grant'){
+                callback('error', message = {
+                    'message': body.error_description
+                });
+            }
 
-                USER_TOKEN = body.access_token
-                REFRESH_TOKEN = body.refresh_token
+        })
+    }
+    catch(err){
+        session.endDialog('Something went wrong. Please try again.')
+    }
+
+}
+
+function getUber(session, callback){
+    try{
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": session.dialogData.access_code
+        }
+
+        var auth = new Buffer(UBER_CLIENT_ID + ':' + UBER_CLIENT_SECRET).toString('base64');
+
+        headers = {
+            'Content-type': "application/json",
+            'Authorization': 'Basic ' + auth
+        };
+
+        // Configure the request
+        var options = {
+            url: 'https://login.uber.com/oauth/v2/token',
+            method: 'POST',
+            headers: headers,
+            form: data,
+            json:true
+
+        };
+
+        // Start the request
+        request(options, function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+                // Print out the response body
+
+                db.addUser(body.access_token, body.refresh_token);
                 callback('OK', message = {
                     'access_token': body.access_token,
                     'refresh_token': body.refresh_token,
@@ -475,7 +527,15 @@ function getLyftAccess(session) {
 
     var url = "https://api.lyft.com/oauth/authorize?client_id=FByyis93GEZR&scope=public%20profile%20rides.read%20rides.request%20offline&state=a&response_type=code"
 
-    session.send("You need to add the lyft account");
+    session.send("You need to add the Lyft account");
+    session.send(url)
+}
+
+function getUberAccess(session) {
+
+    var url = "https://login.uber.com/oauth/v2/authorize?response_type=code&client_id=<CLIENT_ID>&scope=request%20profile%20history&redirect_uri=<REDIRECT_URI>"
+
+    session.send("You need to add the Uber account");
     session.send(url)
 }
 
