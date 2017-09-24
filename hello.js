@@ -27,20 +27,20 @@ server.get('/lyft', function (req, res) {
     res.send('Hello World!')
 })
 
-server.get('/book', function (req, res) {
+server.get('/link', function (req, res) {
     data = {
         "grant_type": "authorization_code",
         "code":"sxWDUZePueytFnd5"
-    }
+    };
 
     var auth = new Buffer(LYFT_CLIENT_ID + ':' + LYFT_CLIENT_SECRET).toString('base64');
 
     headers = {
         'Content-type': "application/json",
         'Authorization': 'Basic ' + auth
-    }
+    };
 
-// Configure the request
+    // Configure the request
     var options = {
         url: 'https://api.lyft.com/oauth/token',
         method: 'POST',
@@ -50,7 +50,7 @@ server.get('/book', function (req, res) {
 
     }
 
-// Start the request
+    // Start the request
     request(options, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             // Print out the response body
@@ -65,6 +65,63 @@ server.get('/book', function (req, res) {
 
 server.get('/get', function (req, res) {
     getUser()
+})
+
+server.get('/book', function (req, res) {
+
+    /*
+    curl -X POST -H "Content-Type: application/json" \
+     --user "<client_id>:<client_secret>" \
+     -d '{"grant_type": "authorization_code", "code": "<authorization_code>"}' \
+     'https://api.lyft.com/oauth/token'
+
+
+     curl -X POST -H "Authorization: Bearer <access_token> " \
+     -H "Content-Type: application/json" \
+     -d '' \
+     'https://api.lyft.com/v1/rides'
+     */
+    data = {
+        "ride_type" : "lyft",
+        "origin" : {
+            "lat" : 37.77663,
+            "lng" : -122.39227
+        },
+        "destination" : {
+            "lat" : 37.771,
+            "lng" : -122.39123,
+            "address" : "Mission Bay Boulevard North"
+        }
+    };
+
+    var auth = new Buffer("WqmG5ZFDEOcpITyiIKQWrpyVLO8zmHCnx7y4qsadBC8MQI+zeJYaY59BKSWK1UlDVd1XvaqUrNdyjJmx3r5S9TWf2aWTFRrxgT5WHzcCRUystMYdHswCIOE=").toString('base64');
+
+    headers = {
+        'Content-type': "application/json",
+        'Authorization': 'Basic ' + auth
+    };
+
+    // Configure the request
+    var options = {
+        url: 'https://api.lyft.com/oauth/token',
+        method: 'POST',
+        headers: headers,
+        form: data,
+        json:true
+
+    }
+
+    // Start the request
+    request(options, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+            // Print out the response body
+            console.log(body)
+        }
+        if (body.error == 'invalid_grant'){
+
+        }
+
+    })
 })
 // Listen for messages from users
 server.post('/api/messages', connector.listen());
@@ -98,6 +155,7 @@ dialog.matches('StartRide', [
 
                 if (status == "OK"){
                     session.send("Got the destination as " + results[0]);
+                    session.dialogData.location = results[1]
                     session.send("Press ok to accept and anything else to abort.");
                     builder.Prompts.text(session, 'Is this the destination correct?');
                 }
@@ -111,7 +169,8 @@ dialog.matches('StartRide', [
         if (!cancel(session, results)) {
             var confirmation = String(results.response)
             if (confirmation.toUpperCase() == "OK") {
-                session.dialogData.destination = session.dialogData.input;
+                session.dialogData.destinationAddress = session.dialogData.input;
+                session.dialogData.destination = session.dialogData.location;
                 session.send("OK. Setting the destination as " + session.dialogData.destination);
                 builder.Prompts.text(session, "OK. Where should I set the pick up point?");
                 //builder.Prompts.text(session, "Should I go ahead and book the ride");
@@ -130,6 +189,7 @@ dialog.matches('StartRide', [
 
                 if (status == "OK"){
                     session.send("Got the pickup point as " + results[0]);
+                    session.dialogData.location = results[1]
                     session.send("Press ok to accept and anything else to abort.");
                     builder.Prompts.text(session, 'Is this the pickup correct?');
                 }
@@ -143,7 +203,8 @@ dialog.matches('StartRide', [
         if (!cancel(session, results)) {
             var confirmation = String(results.response)
             if (confirmation.toUpperCase() == "OK") {
-                session.dialogData.source = session.dialogData.input;
+                session.dialogData.sourceAddress = session.dialogData.input;
+                session.dialogData.source = session.dialogData.location;
                 session.send("OK. Setting the pickup point as " + session.dialogData.source);
                 builder.Prompts.text(session, "Should I go ahead and book the ride");
             }
@@ -236,6 +297,10 @@ function getUser() {
     console.log(db.get('manish'))
 }
 
+function bookRide() {
+
+}
+
 function getLyft(session, callback){
     try{
 
@@ -302,6 +367,8 @@ function getAddress(query, callback){
             var results = [];
             for (a in json.results){
                 results.push(json.results[a].formatted_address);
+                const loc = json.results[a].geometry.location
+                results.push(loc.lat + ',' + loc.lng);
             }
             callback(results, status)
         }
@@ -314,4 +381,5 @@ function cancel(session, results) {
     }
     return false
 }
+
 dialog.onDefault(builder.DialogAction.send("I'm sorry I didn't understand. I can only book rides."));
