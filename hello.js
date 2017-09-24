@@ -12,7 +12,7 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 var MICROSOFT_APP_ID = '99ffde50-d6f9-4853-b744-c251e7255df0';
 var MICROSOFT_APP_PASSWORD = 'XOjg6LtgkryrBgBBz5knuJr';
 var LYFT_CLIENT_ID = 'FByyis93GEZR';
-var LYFT_CLIENT_SECRET = 'FZXmjNuivSq8cIqRCVQgg5SST8jzYAOz';
+var LYFT_CLIENT_SECRET = 'SANDBOX-FZXmjNuivSq8cIqRCVQgg5SST8jzYAOz';
 
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
@@ -27,6 +27,45 @@ server.get('/lyft', function (req, res) {
     res.send('Hello World!')
 })
 
+server.get('/book', function (req, res) {
+    data = {
+        "grant_type": "authorization_code",
+        "code":"sxWDUZePueytFnd5"
+    }
+
+    var auth = new Buffer(LYFT_CLIENT_ID + ':' + LYFT_CLIENT_SECRET).toString('base64');
+
+    headers = {
+        'Content-type': "application/json",
+        'Authorization': 'Basic ' + auth
+    }
+
+// Configure the request
+    var options = {
+        url: 'https://api.lyft.com/oauth/token',
+        method: 'POST',
+        headers: headers,
+        form: data,
+        json:true
+
+    }
+
+// Start the request
+    request(options, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+            // Print out the response body
+            console.log(body)
+        }
+        if (body.error == 'invalid_grant'){
+
+        }
+
+    })
+})
+
+server.get('/get', function (req, res) {
+    getUser()
+})
 // Listen for messages from users
 server.post('/api/messages', connector.listen());
 
@@ -147,45 +186,103 @@ dialog.matches('StartRide', [
 dialog.matches('AddLyft', [
     function (session) {
         getLyftAccess(session);
-        builder.Prompts.text(session, "Please give the access code for us to add your lyft account");
+        session.send(session, "We need the access code for us to add your lyft account");
+        builder.Prompts.text(session, "Do you have an acces token from Lyft");
     },
     function (session,results) {
-        session.dialogData.access_code = results.response;
+        if (!cancel(session, results)) {
+            const ans = results.response
 
-        getLyft(session);
+            if (String(ans)[0].toLowerCase() == 'y') {
+                builder.Prompts.text(session, "Please enter the acces token from Lyft");
+            }
+            else {
+                session.endDialog('We need the token. Please start over...');
+            }
+        }
+    },
+    function (session,results) {
+        if (!cancel(session, results)) {
+            session.dialogData.access_code = results.response;
+
+            getLyft(session, function(results, status) {
+                if (results == 'OK'){
+                    session.endDialog("Great! Added your account...")
+                }
+                else{
+                    session.endDialog("Invalid/Expired Access Code");
+                }
+            });
+        }
     }
 ]);
 
-function getLyft(session){
-    headers = {
-        'Content-Type': 'application/json',
-    }
 
-    data = '{"grant_type": "authorization_code", "code": ' + session.dialogData.access_code + '}'
+var flatfile = require('flat-file-db');
+var db = flatfile('my.db');
 
-    const secret = 'manish.dwibedy@gmail.com:liferocks'
-    // session.dialogData.username + ':' + session.dialogData.password
-    headers = {
-        'Content-Type': 'application/json',
-    }
-
-
-    var options = {
-        host: 'https://api.lyft.com/oauth/token',
-        method: 'POST',
-        headers: headers,
-        auth:(LYFT_CLIENT_ID, secret),
-        data:data
-    };
-
-    http.request(options, function(res) {
-        console.log('STATUS: ' + res.statusCode);
-        console.log('HEADERS: ' + JSON.stringify(res.headers));
-        res.setEncoding('utf8');
-        res.on('data', function (chunk) {
-            console.log('BODY: ' + chunk);
+function addUser(access_token, refersh_token){
+    db.on('open', function() {
+        db.put('manish', {
+            access_token: access_token,
+            refresh_token: refersh_token
         });
-    }).end();
+        console.log(db.get('manish'))
+    });
+}
+
+function getUser() {
+    var db = flatfile.sync('my.db');
+    console.log(db.get('manish'))
+}
+
+function getLyft(session, callback){
+    try{
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": session.dialogData.access_code
+        }
+
+        var auth = new Buffer(LYFT_CLIENT_ID + ':' + LYFT_CLIENT_SECRET).toString('base64');
+
+        headers = {
+            'Content-type': "application/json",
+            'Authorization': 'Basic ' + auth
+        };
+
+        // Configure the request
+        var options = {
+            url: 'https://api.lyft.com/oauth/token',
+            method: 'POST',
+            headers: headers,
+            form: data,
+            json:true
+
+        };
+
+        // Start the request
+        request(options, function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+                // Print out the response body
+
+                db.addUser(body.access_token, body.refresh_token);
+                callback('OK', message = {
+                    'access_token': body.access_token,
+                    'refresh_token': body.refresh_token,
+                });
+            }
+            if (body.error == 'invalid_grant'){
+                callback('error', message = {
+                    'message': body.error_description
+                });
+            }
+
+        })
+    }
+    catch(err){
+        session.endDialog('Something went wrong. Please try again.')
+    }
 
 }
 function getLyftAccess(session) {
