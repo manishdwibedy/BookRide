@@ -67,6 +67,42 @@ server.get('/get', function (req, res) {
     getUser()
 })
 
+server.get('/refresh', function (req, res) {
+    data = {
+        "grant_type": "refresh_token",
+        "refresh_token":"979uibSd4XIQ0S2Rj1D55xqPmzClXQ5hMDx288sEZ58REE4B4CZk6uVF9sRuwCIY09B6FwmcLcXEnK1JmWuLYUxUxbsDtl31aNbRo4nRaG2x"
+    };
+
+    var auth = new Buffer(LYFT_CLIENT_ID + ':' + LYFT_CLIENT_SECRET).toString('base64');
+
+    headers = {
+        'Content-type': "application/json",
+        'Authorization': 'Basic ' + auth
+    };
+
+    // Configure the request
+    var options = {
+        url: 'https://api.lyft.com/oauth/token',
+        method: 'POST',
+        headers: headers,
+        form: data,
+        json:true
+
+    }
+
+    // Start the request
+    request(options, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+            // Print out the response body
+            console.log(body)
+        }
+        if (body.error == 'invalid_grant'){
+
+        }
+
+    })
+})
+
 server.get('/book', function (req, res) {
 
     /*
@@ -91,14 +127,15 @@ server.get('/book', function (req, res) {
             "lat" : 37.771,
             "lng" : -122.39123,
             "address" : "Mission Bay Boulevard North"
-        }
+        },
+        "grant_type": "authorization_code"
     };
 
     var auth = new Buffer("WqmG5ZFDEOcpITyiIKQWrpyVLO8zmHCnx7y4qsadBC8MQI+zeJYaY59BKSWK1UlDVd1XvaqUrNdyjJmx3r5S9TWf2aWTFRrxgT5WHzcCRUystMYdHswCIOE=").toString('base64');
 
     headers = {
         'Content-type': "application/json",
-        'Authorization': 'Basic ' + auth
+        'Authorization': 'Basic ' + "WqmG5ZFDEOcpITyiIKQWrpyVLO8zmHCnx7y4qsadBC8MQI+zeJYaY59BKSWK1UlDVd1XvaqUrNdyjJmx3r5S9TWf2aWTFRrxgT5WHzcCRUystMYdHswCIOE="
     };
 
     // Configure the request
@@ -107,7 +144,7 @@ server.get('/book', function (req, res) {
         method: 'POST',
         headers: headers,
         form: data,
-        json:true
+        json: true
 
     }
 
@@ -331,7 +368,7 @@ function getLyft(session, callback){
             if (!error && response.statusCode == 200) {
                 // Print out the response body
 
-                db.addUser(body.access_token, body.refresh_token);
+                addUser(body.access_token, body.refresh_token);
                 callback('OK', message = {
                     'access_token': body.access_token,
                     'refresh_token': body.refresh_token,
