@@ -2,6 +2,8 @@ var restify = require('restify');
 var builder = require('botbuilder');
 var request = require('request');
 var http = require('http');
+var express = require('express');
+var app = express();
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -30,7 +32,70 @@ server.get('/lyft', function (req, res) {
     var query = req.query().split('&')
 
     var code = query[0].split('=')[1]
-    res.send('Hello World!')
+    // res.send('Hello World!')
+
+    getLyft(code, function(results, status) {
+
+        var info = '';
+        if (results == 'OK'){
+            //session.endDialog("Great! Added your account...")
+            //res.send("Great! Added your account...")
+            info = "Great! RideBot Authorized!!";
+        }
+        else{
+            "Great! Added your account..."
+            info = "Invalid/Expired Access Code";
+            // res.send();
+            //session.endDialog("Invalid/Expired Access Code");
+        }
+
+        var body = '<!DOCTYPE html>\n' +
+            '<html lang="en">\n' +
+            '<head>\n' +
+            '    <meta charset="utf-8">\n' +
+            '    <meta http-equiv="X-UA-Compatible" content="IE=edge">\n' +
+            '    <meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+            '    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->\n' +
+            '    <title>Bootstrap 101 Template</title>\n' +
+            '\n' +
+            '\n' +
+            '    <!-- Latest compiled and minified CSS -->\n' +
+            '    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">\n' +
+            '\n' +
+            '    <!-- Optional theme -->\n' +
+            '    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">\n' +
+            '\n' +
+            '    <!-- Latest compiled and minified JavaScript -->\n' +
+            '    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>\n' +
+            '    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->\n' +
+            '    <!-- WARNING: Respond.js doesn\'t work if you view the page via file:// -->\n' +
+            '    <!--[if lt IE 9]>\n' +
+            '    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>\n' +
+            '    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>\n' +
+            '    <![endif]-->\n' +
+            '</head>\n' +
+            '<body>\n' +
+            '<div class="jumbotron" style="text-align: center">\n' +
+            '    <h1 >Hello, world!</h1>\n' +
+            '    <p> ' + info + '</p>\n' +
+            '    <p>\n' +
+            '        <a class="btn btn-primary btn-lg" href="#" role="button" onclick="window.close();">Learn more</a>\n' +
+            '    </p>\n' +
+            '</div>\n' +
+            '\n' +
+            '<!-- jQuery (necessary for Bootstrap\'s JavaScript plugins) -->\n' +
+            '<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>\n' +
+            '<!-- Include all compiled plugins (below), or include individual files as needed -->\n' +
+            '<script src="js/bootstrap.min.js"></script>\n' +
+            '</body>\n' +
+            '</html>';
+        res.writeHead(200, {
+            'Content-Length': Buffer.byteLength(body),
+            'Content-Type': 'text/html'
+        });
+        res.write(body);
+        res.end();
+    });
 })
 
 server.get('/link', function (req, res) {
@@ -355,34 +420,7 @@ dialog.matches('Status', [
 dialog.matches('AddLyft', [
     function (session) {
         getLyftAccess(session);
-        session.send(session, "We need the access code for us to add your Lyft account.");
-    },
-    function (session,results) {
-        if (!cancel(session, results)) {
-            const ans = results.response
-
-            if (String(ans)[0].toLowerCase() == 'y') {
-                builder.Prompts.text(session, "Please enter the access token from Lyft.");
-            }
-            else {
-                session.endDialog('We need the token. Please start over...');
-            }
-        }
-    },
-    function (session,results) {
-        if (!cancel(session, results)) {
-            session.dialogData.access_code = results.response;
-
-            getLyft(session, function(results, status) {
-                if (results == 'OK'){
-
-                    session.endDialog("Great! Added your account...")
-                }
-                else{
-                    session.endDialog("Invalid/Expired Access Code");
-                }
-            });
-        }
+        session.endDialog('We need the token. Please start over...');
     }
 ]);
 
@@ -618,12 +656,12 @@ function cancelLyft(session, callback){
 
 }
 
-function getLyft(session, callback){
+function getLyft(code, callback){
     try{
 
         data = {
             "grant_type": "authorization_code",
-            "code": session.dialogData.access_code
+            "code": code
         }
 
         var auth = new Buffer(LYFT_CLIENT_ID + ':' + LYFT_CLIENT_SECRET).toString('base64');
@@ -676,7 +714,7 @@ function getLyftAccess(session) {
 
     session.send("You need to add your Lyft account.");
     session.send(url)
-    builder.Prompts.text(session, "Do you have an access token from Lyft?");
+    session.endDialog("Add your account to link the lyft account with us");
 }
 
 function getAddress(query, callback){
