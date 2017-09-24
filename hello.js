@@ -447,6 +447,12 @@ function getLyftDetail(session, callback){
         request(options, function (error, response, body) {
             if (!error && response.statusCode == 200) {
                 // Print out the response body
+                const driver = body.driver;
+                const vehicle = body.vehicle;
+                const origin = body.origin;
+
+                session.send('Your driver '+ driver.first_name + ' is coming to pick up ' + (origin.eta_seconds / 60) + ' minutes.');
+                session.send('You can contact the driver at ' + driver.phone_number);
                 callback('OK')
             }
             if (body.error == 'invalid_grant'){
