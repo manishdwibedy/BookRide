@@ -25,7 +25,7 @@ REFRESH_TOKEN = ""
 RIDE_ID = ""
 SOURCE = ""
 DESTINATION = ""
-
+CLASS = ""
 server.get('/lyft', function (req, res) {
     var query = req.query().split('&')
 
@@ -241,7 +241,8 @@ dialog.matches('StartRide', [
             if (confirmation.toUpperCase() == "OK") {
                 session.dialogData.sourceAddress = session.dialogData.input;
                 session.dialogData.source = session.dialogData.location;
-                builder.Prompts.text(session, "Should I go ahead and book the ride");
+                session.send("Please 'quit' to cancel the ride or chooose the following to select the ride type.")
+                builder.Prompts.text(session, "Please select one of the class to book - Lyft Line, Lyft, Lyft Plus, Lyft Premier, Lyft Lux or Lyft Lux SUV.");
             }
             else{
                 session.endDialog('start over...');
@@ -251,53 +252,73 @@ dialog.matches('StartRide', [
     },
     function (session, results) {
         if (!cancel(session, results)) {
-            session.dialogData.confirmation = results.response;
-            try {
-                var confirmation = String(results.response)
-                if (confirmation.toUpperCase() == "OK") {
-                    bookLyft(session, function(status) {
-                        if (status == 'done'){
-                            session.send("Type 'status' to get the status of your ride.");
-                            session.endDialog("Great. I am booking a ride for you.");
+            var confirmation = String(results.response)
 
-                            setTimeout(function(){
-                                getLyftDetail(session, function (ride) {
-                                    if(ride == "OK"){
-
-                                    }
-                                    session.endDialog();
-                                })
-                            }, 1000);
-                        }
-                        else{
-                            session.endDialog("Error occurred");
-                        }
-
-                    });
-                }
-                else {
-                    builder.Prompts.text(session, "Oh. Should I cancel the ride. Say OK to book or anything other than that to cancel the request");
-                }
+            switch (confirmation){
+                case 'line':
+                    CLASS = "lyft_line"
+                    break
+                case 'lyft':
+                    CLASS = "lyft"
+                    break
+                case 'plus':
+                    CLASS = "lyft_plus"
+                    break
+                case 'premier':
+                    CLASS = "lyft_premier"
+                    break
+                case 'lux':
+                    CLASS = "lyft_lux"
+                    break
+                case 'luxsuv':
+                    CLASS = "lyft_luxsuv"
+                    break
+                default:
+                    CLASS = 'lyft'
             }
-            catch (err) {
-                builder.Prompts.text(session, "Oh. Should I cancel the ride. Say OK to book or anything other than that to cancel the request");
-            }
+
+            bookLyft(session, function(status) {
+                if (status == 'done'){
+                    session.send("Type 'status' to get the status of your ride.");
+                    session.endDialog("Great. I am booking a ride for you.");
+
+                    setTimeout(function(){
+                        getLyftDetail(session, function (ride) {
+                            if(ride == "OK"){
+
+                            }
+                            session.endDialog();
+                        })
+                    }, 1000);
+                }
+                else{
+                    session.endDialog("Error occurred");
+                }
+
+            });
         }
     },
     function (session, results, next) {
         if (!cancel(session, results)) {
             session.dialogData.confirmation = results.response;
-            if (results.response == "OK") {
+            if (String(results.response).toLowerCase() == "OK") {
                 bookLyft(session, function(status) {
+                    if (status == 'done'){
+                        session.send("Type 'status' to get the status of your ride.");
+                        session.endDialog("Great. I am booking a ride for you.");
 
-                    if (status == 'OK'){
-                        session.endDialog("Type 'status' to get the status of your ride.");
-                        session.say("Great. I am booking a ride for you.");
+                        setTimeout(function(){
+                            getLyftDetail(session, function (ride) {
+                                if(ride == "OK"){
+
+                                }
+                                session.endDialog();
+                            })
+                        }, 1000);
                     }
                     else{
                         session.endDialog("Error occurred");
                     }
-
                 });
 
 
@@ -404,7 +425,7 @@ function bookLyft(session, callback){
     const destination = session.dialogData.destination.split(',')
 
     data = {
-        "ride_type" : "lyft_plus",
+        "ride_type" : CLASS,
         "origin.lat" : parseFloat(source[0]),
         "origin.lng" : parseFloat(source[1]),
 
