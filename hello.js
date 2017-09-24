@@ -196,11 +196,11 @@ dialog.matches('StartRide', [
                 if (status == "OK"){
                     session.send("Got the destination as " + results[0]);
                     session.dialogData.location = results[1]
-                    session.send("Press ok to accept and anything else to abort.");
-                    builder.Prompts.text(session, 'Is this the destination correct?');
+                    session.send("Say OK to accept or anything else to cancel.");
+                    builder.Prompts.text(session, 'Is the destination correct?');
                 }
                 else{
-                    session.endDialog('start over...');
+                    session.endDialog('Starting over...');
                 }
             });
         }
@@ -212,11 +212,11 @@ dialog.matches('StartRide', [
                 session.dialogData.destinationAddress = session.dialogData.input;
                 session.dialogData.destination = session.dialogData.location;
                 // session.send("OK. Setting the destination as " + session.dialogData.destinationAddress);
-                builder.Prompts.text(session, "OK. Where should I set the pick up point?");
+                builder.Prompts.text(session, "OK. Where should I set the pickup point?");
                 //builder.Prompts.text(session, "Should I go ahead and book the ride");
             }
             else{
-                session.endDialog('start over...');
+                session.endDialog('Starting over...');
             }
 
         }
@@ -230,11 +230,11 @@ dialog.matches('StartRide', [
                 if (status == "OK"){
                     session.send("Got the pickup point as " + results[0]);
                     session.dialogData.location = results[1]
-                    session.send("Press ok to accept and anything else to abort.");
-                    builder.Prompts.text(session, 'Is this the pickup correct?');
+                    session.send("Say OK to accept or anything else to cancel.");
+                    builder.Prompts.text(session, 'Is the pickup point correct?');
                 }
                 else{
-                    session.endDialog('start over...');
+                    session.endDialog('Starting over...');
                 }
             });
         }
@@ -245,11 +245,11 @@ dialog.matches('StartRide', [
             if (confirmation.toUpperCase() == "OK") {
                 session.dialogData.sourceAddress = session.dialogData.input;
                 session.dialogData.source = session.dialogData.location;
-                session.send("Please 'quit' to cancel the ride or chooose the following to select the ride type.")
-                builder.Prompts.text(session, "Please select one of the class to book - Lyft Line, Lyft, Lyft Plus, Lyft Premier, Lyft Lux or Lyft Lux SUV.");
+                session.send("Say 'quit' to cancel the ride or choose the following to select the ride type.")
+                builder.Prompts.text(session, "Please select one of the ride types to book - Lyft Line, Lyft, Lyft Plus, Lyft Premier, Lyft Lux or Lyft Lux SUV.");
             }
             else{
-                session.endDialog('start over...');
+                session.endDialog('Starting over...');
             }
 
         }
@@ -286,8 +286,8 @@ dialog.matches('StartRide', [
             // });
             bookLyft(session, function(status) {
                 if (status == 'done'){
-                    session.send("Type 'status' to get the status of your ride.");
-                    session.endDialog("Great. I am booking a ride for you.");
+                    session.send("Great. I am booking a ride for you.")
+                    session.endDialog("Say 'status' to learn more about your ride.")
 
                     setTimeout(function(){
                         getLyftDetail(session, function (ride) {
@@ -311,8 +311,8 @@ dialog.matches('StartRide', [
             if (String(results.response).toLowerCase() == "OK") {
                 bookLyft(session, function(status) {
                     if (status == 'done'){
-                        session.send("Type 'status' to get the status of your ride.");
-                        session.endDialog("Great. I am booking a ride for you.");
+                        session.send("Great. I am booking a ride for you.")
+                        session.endDialog("Say 'status' to learn more about your ride.")
 
                         setTimeout(function(){
                             getLyftDetail(session, function (ride) {
@@ -355,14 +355,14 @@ dialog.matches('Status', [
 dialog.matches('AddLyft', [
     function (session) {
         getLyftAccess(session);
-        session.send(session, "We need the access code for us to add your lyft account");
+        session.send(session, "We need the access code for us to add your Lyft account.");
     },
     function (session,results) {
         if (!cancel(session, results)) {
             const ans = results.response
 
             if (String(ans)[0].toLowerCase() == 'y') {
-                builder.Prompts.text(session, "Please enter the acces token from Lyft");
+                builder.Prompts.text(session, "Please enter the access token from Lyft.");
             }
             else {
                 session.endDialog('We need the token. Please start over...');
@@ -395,7 +395,7 @@ dialog.matches('status', [
 dialog.matches('cancel', [
     function (session) {
         cancelLyft(session, function() {
-            session.endDialog('Your ride has been cancelled');
+            session.endDialog('Your ride has been cancelled.');
         })
 
     }
@@ -404,11 +404,11 @@ dialog.matches('cancel', [
 var flatfile = require('flat-file-db');
 var db = flatfile('my.db');
 
-function addUser(access_token, refersh_token){
+function addUser(access_token, refresh_token){
     db.on('open', function() {
         db.put('manish', {
             access_token: access_token,
-            refresh_token: refersh_token
+            refresh_token: refresh_token
         });
         console.log(db.get('manish'))
     });
@@ -562,7 +562,7 @@ function getLyftDetail(session, callback){
 
 
                 if (driver != null && vehicle != null && origin != null){
-                    session.send('Your driver '+ driver.first_name + ' is coming to pick up in ' + (origin.eta_seconds / 60) + ' minutes.');
+                    session.send('Your driver, '+ driver.first_name + ', is coming to pick you up in ' + (origin.eta_seconds / 60) + ' minutes.');
                     session.send('You can contact the driver at ' + driver.phone_number);
                     callback('OK')
                 }
@@ -588,7 +588,7 @@ function cancelLyft(session, callback){
         };
 
         if (RIDE_ID.length == 0){
-            session.send('No current ride available');
+            session.send('No rides currently available.');
         }
         else{
             // Configure the request
@@ -674,9 +674,9 @@ function getLyftAccess(session) {
 
     var url = "https://api.lyft.com/oauth/authorize?client_id=FByyis93GEZR&scope=public%20profile%20rides.read%20rides.request%20offline&state=a&response_type=code"
 
-    session.send("You need to add the lyft account");
+    session.send("You need to add your Lyft account.");
     session.send(url)
-    builder.Prompts.text(session, "Do you have an acces token from Lyft");
+    builder.Prompts.text(session, "Do you have an access token from Lyft?");
 }
 
 function getAddress(query, callback){
