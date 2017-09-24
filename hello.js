@@ -12,7 +12,7 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 var MICROSOFT_APP_ID = '99ffde50-d6f9-4853-b744-c251e7255df0';
 var MICROSOFT_APP_PASSWORD = 'XOjg6LtgkryrBgBBz5knuJr';
 var LYFT_CLIENT_ID = 'FByyis93GEZR';
-var LYFT_CLIENT_SECRET = 'SANDBOX-FZXmjNuivSq8cIqRCVQgg5SST8jzYAOz';
+var LYFT_CLIENT_SECRET = 'FZXmjNuivSq8cIqRCVQgg5SST8jzYAOz';
 
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
@@ -22,6 +22,7 @@ var connector = new builder.ChatConnector({
 
 USER_TOKEN = "";
 REFRESH_TOKEN = ""
+RIDE_ID = ""
 
 server.get('/lyft', function (req, res) {
     var query = req.query().split('&')
@@ -71,6 +72,10 @@ server.get('/get', function (req, res) {
 })
 
 server.get('/refresh', function (req, res) {
+    refresh();
+})
+
+function refresh() {
     data = {
         "grant_type": "refresh_token",
         "refresh_token":REFRESH_TOKEN
@@ -105,38 +110,8 @@ server.get('/refresh', function (req, res) {
         }
 
     })
-})
-
+}
 server.get('/book', function (req, res) {
-
-    /*
-     curl -X POST -H "Authorization: Bearer <access_token> " \
-     -H "Content-Type: application/json" \
-     -d '' \
-     'https://api.lyft.com/v1/rides'
-     */
-
-//     var lyft = require('node-lyft');
-//
-//
-//     let defaultClient = lyft.ApiClient.instance;
-//
-// // Configure OAuth2 access token for authorization: User Authentication
-//     let userAuth = defaultClient.authentications['User Authentication'];
-//     userAuth.accessToken = USER_TOKEN;
-//
-//     let apiInstance = new lyft.UserApi();
-//
-//     let request = new lyft.Ride('lyft', new lyft.Location(37.77663, -122.39227));
-//     request.destination = new lyft.Location(37.771, -122.39123);
-//
-//     apiInstance.newRide(request).then((data) => {
-//         console.log('API called successfully. Returned data: ' + data);
-// }, (error) => {
-//         console.error(error);
-//     });
-
-
     data = {
         "ride_type" : "lyft",
         "origin.lat" : 37.771,
@@ -196,7 +171,8 @@ dialog.matches('StartRide', [
         // Resolve and store any entities passed from LUIS.
         // var appliance = builder.EntityRecognizer.findEntity(args.entities, 'Appliance');
         // session.dialogData.appliance = appliance;
-
+        // getUser();
+        refresh()
         // Prompt for title
         builder.Prompts.text(session, 'Sure. Where to do you want to go?');
 
@@ -316,6 +292,23 @@ dialog.matches('StartRide', [
                 session.endDialog("OK. Cancelling the request.");
             }
         }
+    },
+]);
+
+// Add intent handlers
+dialog.matches('Status', [
+    function (session) {
+        // Resolve and store any entities passed from LUIS.
+        // var appliance = builder.EntityRecognizer.findEntity(args.entities, 'Appliance');
+        // session.dialogData.appliance = appliance;
+        // getUser();
+        getLyftDetail(session, function(status) {
+
+
+        })
+        // Prompt for title
+        builder.Prompts.text(session, 'Sure. Where to do you want to go?');
+
     }
 ]);
 
@@ -343,7 +336,7 @@ dialog.matches('AddLyft', [
 
             getLyft(session, function(results, status) {
                 if (results == 'OK'){
-                    USER_TOKEN =
+
                     session.endDialog("Great! Added your account...")
                 }
                 else{
@@ -370,7 +363,10 @@ function addUser(access_token, refersh_token){
 
 function getUser() {
     var db = flatfile.sync('my.db');
-    console.log(db.get('manish'))
+    user = db.get('manish')
+
+    USER_TOKEN = user['access_token']
+    REFRESH_TOKEN = user['refresh_token']
 }
 
 function bookRide() {
@@ -413,11 +409,56 @@ function bookLyft(session, callback){
         if (!error && response.statusCode == 201) {
             // Print out the response body
             callback('done')
+            RIDE_ID = body.ride_id
+
+            setTimeout(function(){
+                getLyftDetail(session, function (ride) {
+                    if(ride == "OK"){
+                        // session.send("OK. Setting the pickup point as " + session.dialogData.source);
+                    }
+                })
+            }, 3000);
         }
         if (body.error == 'invalid_grant'){
             callback('error')
         }
     })
+}
+
+function getLyftDetail(session, callback){
+    try{
+        headers = {
+            'Content-type': "application/json",
+            'Authorization': 'Bearer ' + USER_TOKEN
+        };
+
+
+        // Configure the request
+        var options = {
+            url: 'https://api.lyft.com/v1/rides/' + RIDE_ID,
+            method: 'GET',
+            headers: headers,
+            form: data,
+            json:true
+
+        };
+
+        // Start the request
+        request(options, function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+                // Print out the response body
+                callback('OK')
+            }
+            if (body.error == 'invalid_grant'){
+                callback('error');
+            }
+
+        })
+    }
+    catch(err){
+        session.endDialog('Something went wrong. Please try again.')
+    }
+
 }
 function getLyft(session, callback){
     try{
