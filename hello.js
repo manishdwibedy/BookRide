@@ -533,7 +533,7 @@ function getLyftAccess(session) {
 
 function getUberAccess(session) {
 
-    var url = "https://login.uber.com/oauth/v2/authorize?response_type=code&client_id=<CLIENT_ID>&scope=request%20profile%20history&redirect_uri=<REDIRECT_URI>"
+    var url = "https://login.uber.com/oauth/v2/authorize?client_id=<CLIENT_ID>&response_type=code"
 
     session.send("You need to add the Uber account");
     session.send(url)
