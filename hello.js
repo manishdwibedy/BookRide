@@ -4,10 +4,11 @@ var request = require('request');
 var http = require('http');
 var express = require('express');
 var app = express();
+var social = require('./social.js');  // This will load your fitness module
 
 // Setup Restify Server
 var server = restify.createServer();
-server.listen(process.env.port || process.env.PORT || 3978, function () {
+server.listen(process.env.port || process.env.PORT || 5000, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
 
@@ -28,6 +29,17 @@ RIDE_ID = ""
 SOURCE = ""
 DESTINATION = ""
 CLASS = ""
+
+server.get('/fb', function (req, res) {
+
+    const fb = social.fb();
+
+    res.writeHeader(200, {"Content-Type": "text/html"});
+    res.write(fb);
+    res.end();
+
+
+})
 server.get('/lyft', function (req, res) {
     var query = req.query().split('&')
 
@@ -40,7 +52,7 @@ server.get('/lyft', function (req, res) {
         if (results == 'OK'){
             //session.endDialog("Great! Added your account...")
             //res.send("Great! Added your account...")
-            info = "Great! RideBot Authorized!!";
+            info = "Great! You are all set to book a ride now..";
         }
         else{
             "Great! Added your account..."
@@ -76,7 +88,7 @@ server.get('/lyft', function (req, res) {
             '</head>\n' +
             '<body>\n' +
             '<div class="jumbotron" style="text-align: center">\n' +
-            '    <h1 >Hello, world!</h1>\n' +
+            '    <h1 >Ride Bot</h1>\n' +
             '    <p> ' + info + '</p>\n' +
             '    <p>\n' +
             '        <a class="btn btn-primary btn-lg" href="#" role="button" onclick="window.close();">Learn more</a>\n' +
@@ -323,7 +335,7 @@ dialog.matches('StartRide', [
         if (!cancel(session, results)) {
             var confirmation = String(results.response)
 
-            switch (confirmation){
+            switch (confirmation.toLowerCase()){
                 case 'line':
                     CLASS = "lyft_line"
                     break
