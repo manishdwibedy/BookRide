@@ -5,12 +5,18 @@ var http = require('http');
 var express = require('express');
 var app = express();
 var social = require('./social.js');  // This will load your fitness module
+var fs = require('fs');
 
 // Setup Restify Server
 var server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 5000, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
+
+server.get(/^\/?.*/, restify.plugins.serveStatic({
+    directory: __dirname + '/public',
+    default: 'index.html'
+}));
 
 var MICROSOFT_APP_ID = '99ffde50-d6f9-4853-b744-c251e7255df0';
 var MICROSOFT_APP_PASSWORD = 'XOjg6LtgkryrBgBBz5knuJr';
@@ -30,6 +36,13 @@ SOURCE = ""
 DESTINATION = ""
 CLASS = ""
 
+server.get('/q', function (req, res) {
+    fs.readFile('test.html', function(err, data) {
+        res.writeHead(200, {'Content-Type': 'text/html'});
+        res.write(data);
+        res.end();
+    });
+})
 server.get('/fb', function (req, res) {
 
     const fb = social.fb();
