@@ -1,0 +1,21 @@
+curl -X GET 'https://api.lyft.com/oauth/authorize?client_id=FByyis93GEZR&scope=public%20profile%20rides.read%20rides.request%20offline&state=a&response_type=code'
+
+
+Hit this URL
+https://www.lyft.com/oauth/authorize?client_id=FByyis93GEZR&scope=public%20profile%20rides.read%20rides.request%20offline&state=a&response_type=code
+
+Code
+PVQdor3cED6O0FFc
+
+curl -X POST -H "Content-Type: application/json" \
+     --user "FByyis93GEZR:FZXmjNuivSq8cIqRCVQgg5SST8jzYAOz" \
+     -d '{"grant_type": "authorization_code", "code": "PVQdor3cED6O0FFc"}' \
+     'https://api.lyft.com/oauth/token'
+
+
+{"token_type": "Bearer", "access_token": "Rk1+kaCiz3RvrmaMtxhmR4BTqJtQ6eyNkwQaazrR8LoPDgxzG/3Mz5oUO8Dp8eEp6JYtWXDJMthS94tAH1T/piDdjZARAOnGpmQ/z9s2xmpBmGhnpnoPFcs=", "expires_in": 3600, "refresh_token": "8CZkWWhwY/sIYwvBsEb0chg2qFUed/H5X8PpaKSm5V+4Fw7PElCO1TBHsbUnFpMSfCOcAhvRJbT9iGioMJ0JS7B5f0wTgEM74BSvoiQlGghT", "scope": "profile offline rides.read public rides.request"}
+
+Rk1+kaCiz3RvrmaMtxhmR4BTqJtQ6eyNkwQaazrR8LoPDgxzG/3Mz5oUO8Dp8eEp6JYtWXDJMthS94tAH1T/piDdjZARAOnGpmQ/z9s2xmpBmGhnpnoPFcs=
+
+curl -X GET -H 'Authorization: bearer Rk1+kaCiz3RvrmaMtxhmR4BTqJtQ6eyNkwQaazrR8LoPDgxzG/3Mz5oUO8Dp8eEp6JYtWXDJMthS94tAH1T/piDdjZARAOnGpmQ/z9s2xmpBmGhnpnoPFcs=' \
+     'https://api.lyft.com/v1/cost?start_lat=37.7763&start_lng=-122.3918&end_lat=37.7972&end_lng=-122.4533'

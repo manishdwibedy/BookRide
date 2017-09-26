@@ -538,14 +538,18 @@ function bookLyft(session, callback){
 
 function getEstimate(session, callback){
 
+    var access_token = 'Rk1+kaCiz3RvrmaMtxhmR4BTqJtQ6eyNkwQaazrR8LoPDgxzG/3Mz5oUO8Dp8eEp6JYtWXDJMthS94tAH1T/piDdjZARAOnGpmQ/z9s2xmpBmGhnpnoPFcs=';
     var source, destination;
     if (session == null){
-        source = "34.010891,-118.291892"
+        source = "34.032018, -118.293138"
         destination = "34.025963, -118.284229"
+
+        source = source.split(',')
+        destination = destination.split(',')
 
         headers = {
             'Content-type': "application/json",
-            'Authorization': 'Bearer +fDKPbE7Vrsg3jIpDtoXhwpxonK2cvWcy0sPf53EcNroLPK1vnblQI5fIARbZ8w51Yuv5SIb6ISFMimeUkBU6bUx1VPV+sK4K5cK1HRA0mFu6MmnOVsSNHg='
+            'Authorization': 'bearer ' + access_token
         };
     }
     else{
@@ -554,7 +558,7 @@ function getEstimate(session, callback){
 
         headers = {
             'Content-type': "application/json",
-            'Authorization': 'Bearer ' + USER_TOKEN
+            'Authorization': 'bearer ' + USER_TOKEN
         };
     }
     // data = {
@@ -572,11 +576,12 @@ function getEstimate(session, callback){
     // var auth = new Buffer(USER_TOKEN).toString('base64');
 
 
-
+    console.log()
     // Configure the request
     var options = {
         url: 'https://api.lyft.com/v1/cost?start_lat=' + source[0] + '&start_lng=' + source[1] +
         '&end_lat=' + destination[0] + '&end_lng=' + destination[1],
+        // url: 'https://api.lyft.com/v1/cost?start_lat=37.7763&start_lng=-122.3918&end_lat=37.7972&end_lng=-122.4533',
         method: 'GET',
         headers: headers,
         // form: data,
@@ -586,6 +591,9 @@ function getEstimate(session, callback){
 
     // Start the request
     request(options, function (error, response, body) {
+        for(estimate in body.cost_estimates){
+
+        }
         if (!error && response.statusCode == 200) {
             // Print out the response body
             RIDE_ID = body.ride_id
