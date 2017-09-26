@@ -50,7 +50,13 @@ class Social {
         "                    display: 'popup',\n" +
         "                    method: 'share',\n" +
         "                    href: 'http://instagram.com/know.india',\n" +
-        "                }, function(response){});\n" +
+        "                }, function(response){\n" +
+            " if (typeof response != 'undefined') {\n" +
+            "    alert('Post was published.');\n" +
+            "  } else {\n" +
+            "    alert('Post was not published.');\n" +
+            "  }" +
+            "});\n" +
         "            }\n" +
         "            </script></body></html>";
 
