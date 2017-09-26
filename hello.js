@@ -13,7 +13,7 @@ server.listen(process.env.port || process.env.PORT || 5000, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
 
-server.get(/^\/?.*/, restify.plugins.serveStatic({
+server.get('files' + /^\/?.*/, restify.plugins.serveStatic({
     directory: __dirname + '/public',
     default: 'index.html'
 }));
